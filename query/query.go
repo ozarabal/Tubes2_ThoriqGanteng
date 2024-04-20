@@ -15,11 +15,11 @@ type Node struct {
 	Parent   *Node    // Parent dari node
 }
 
-func FindTree(start, goal string) ([]*Node, error) {
+func FindTree(start, goal string, maxdepth int) ([]*Node, error) {
 	startURL := "https://en.wikipedia.org/wiki/" + start
 	goalURL := "https://en.wikipedia.org/wiki/" + goal
 	fmt.Println("Start URL:", startURL)
-	paths, err := ShortestPath(startURL, goalURL)
+	paths, err := ShortestPath(startURL, goalURL, maxdepth)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
@@ -34,21 +34,21 @@ func FindTree(start, goal string) ([]*Node, error) {
 	return paths[0], nil // Mengembalikan jalur terpendek dari startURL ke goalURL
 }
 
-// ShortestPath mencari jalur terpendek dari startURL ke goalURL
-func ShortestPath(startURL, goalURL string) ([][]*Node, error) {
+func ShortestPath(startURL, goalURL string, maxDepth int) ([][]*Node, error) {
 	root := &Node{PageURL: startURL} // Membuat node root dengan startURL sebagai PageURL
 	visited := make(map[string]bool) // Membuat map untuk menyimpan node yang sudah dieksplorasi
 
 	paths := [][]*Node{} // Menyimpan semua jalur yang terbentuk
-	paths = getPaths(startURL, goalURL, visited, root, paths)
+	found := false        // Penanda bahwa jalur sudah ditemukan
 
-	if len(paths) == 0 {
+	paths = getPaths(startURL, goalURL, visited, root, paths, 0, maxDepth, &found)
+
+	if !found {
 		return nil, fmt.Errorf("shortest path not found")
 	}
 
 	return paths, nil
 }
-
 
 func getPath(leaf *Node) []*Node {
 	path := []*Node{leaf} // Mulai dengan node leaf sebagai bagian dari jalur
@@ -64,9 +64,14 @@ func getPath(leaf *Node) []*Node {
 }
 
 // getPaths mengambil jalur-jalur yang dapat dicapai dari startURL ke goalURL
-func getPaths(startURL, goalURL string, visited map[string]bool, parent *Node, paths [][]*Node) [][]*Node {
+func getPaths(startURL, goalURL string, visited map[string]bool, parent *Node, paths [][]*Node, depth, maxDepth int, found *bool) [][]*Node {
+	if depth > maxDepth || *found {
+		return paths // Melewati batas kedalaman maksimum atau jalur sudah ditemukan, berhenti pencarian untuk jalur ini
+	}
+
 	if parent.PageURL == goalURL { // Jika node saat ini adalah goal node
 		// Path ditemukan, tambahkan jalur ke paths
+		*found = true // Set penanda bahwa jalur telah ditemukan
 		paths = append(paths, getPath(parent))
 		return paths
 	}
@@ -76,18 +81,22 @@ func getPaths(startURL, goalURL string, visited map[string]bool, parent *Node, p
 	}
 	visited[parent.PageURL] = true // Tandai node sebagai sudah dieksplorasi
 
-	// Ambil tautan-tautan dari halaman node
+	// Ambil tautan-tautan dari halaman node menggunakan GetLinks
 	links, err := GetLinks(parent.PageURL)
 	if err != nil {
 		fmt.Println("Error fetching links:", err)
 		return paths
 	}
 
-	// Untuk setiap tautan, buat node anak dan rekursif cari jalur
+	// Untuk setiap tautan, buat node anak dan rekursif cari jalur dengan penambahan kedalaman
 	for _, link := range links {
+		fmt.Println(link)
 		child := &Node{PageURL: link, Parent: parent}
 		parent.Children = append(parent.Children, child)
-		paths = getPaths(startURL, goalURL, visited, child, paths)
+		paths = getPaths(startURL, goalURL, visited, child, paths, depth+1, maxDepth, found)
+		if *found {
+			break // Jika jalur sudah ditemukan, hentikan pencarian lebih lanjut
+		}
 	}
 
 	return paths
@@ -123,14 +132,19 @@ func GetLinks(pageURL string) ([]string, error) {
 		return nil, err
 	}
 
-	links := []string{}
+	linksMap := make(map[string]bool) // Gunakan map untuk melacak link yang telah ditemukan
 	doc.Find("a").Each(func(_ int, s *goquery.Selection) {
 		link, exists := s.Attr("href")
 		if exists && strings.HasPrefix(link, "/wiki/") {
 			link = "https://en.wikipedia.org" + link
-			links = append(links, link)
+			linksMap[link] = true // Tambahkan link ke map jika belum ada
 		}
 	})
+
+	links := make([]string, 0, len(linksMap)) // Buat slice baru untuk menyimpan link unik
+	for link := range linksMap {
+		links = append(links, link)
+	}
 
 	return links, nil
 }
