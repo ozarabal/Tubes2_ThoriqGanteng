@@ -10,7 +10,8 @@ func main() {
 	startTime := time.Now()
 	fmt.Println("Hello World")
 
-	query.FindTree("Indonesia", "Singapura")
+	query.FindTree("Indonesia", "Bekasi")
+	// query.GetLinks("https://en.wikipedia.org/wiki/Indonesia")
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 	fmt.Println("Execution Time:", duration)

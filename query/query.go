@@ -40,11 +40,15 @@ func ShortestPath(startURL, goalURL string) ([][]*Node, error) {
 	visited := make(map[string]bool) // Membuat map untuk menyimpan node yang sudah dieksplorasi
 
 	paths := [][]*Node{} // Menyimpan semua jalur yang terbentuk
-	paths = getPaths(startURL, goalURL, visited, root, paths)
+	paths,found := IDS(startURL, goalURL, visited, root, paths)
+	// IDS(startURL, goalURL string,visited map[string]bool, parent *Node, paths [][]*Node)
 
-	if len(paths) == 0 {
+	if !found{
 		return nil, fmt.Errorf("shortest path not found")
 	}
+	// if len(paths) == 0 {
+	// 	return nil, fmt.Errorf("shortest path not found")
+	// }
 
 	return paths, nil
 }
@@ -94,6 +98,55 @@ func getPaths(startURL, goalURL string, visited map[string]bool, parent *Node, p
 }
 
 
+func DLS(limit int,goalURL string,visited map[string]bool, parent *Node, paths [][]*Node) ([][]*Node, bool) {
+	if parent.PageURL == goalURL { 
+		paths = append(paths, getPath(parent))
+		// printParentsUntilRoot(parent)
+		return paths,true
+	}
+
+	if(limit <=0){
+		return paths,false
+	}
+	if visited[parent.PageURL] { 
+		return paths,false
+	}
+	visited[parent.PageURL] = true
+	links, err := GetLinks(parent.PageURL)
+	if err != nil {
+		fmt.Println("Error fetching links:", err)
+		return paths,false
+	}
+	for _, link := range links {
+		child := &Node{PageURL: link, Parent: parent}
+		
+		if !visited[child.PageURL]{
+			parent.Children = append(parent.Children, child)
+			currentLimit := limit-1
+			paths,found := DLS(currentLimit, goalURL, visited, child, paths)
+			if(found){
+				return paths,true
+			}
+		}
+		
+	}
+	
+	return paths,false
+}
+
+func IDS(startURL, goalURL string,visited map[string]bool, parent *Node, paths [][]*Node) ([][]*Node, bool) {
+	pathsAns := [][]*Node{}
+	for depth := 0; depth <= 3; depth++ {	
+		visited := make(map[string]bool)
+		pathsAns, found := DLS(depth,goalURL,visited,parent,paths)
+		if  found {
+			return pathsAns,true
+		}
+	}
+	return pathsAns,false
+}
+
+
 // getLinks mengambil tautan-tautan dari halaman Wikipedia
 func GetLinks(pageURL string) ([]string, error) {
 	client := &http.Client{}
@@ -131,6 +184,6 @@ func GetLinks(pageURL string) ([]string, error) {
 			links = append(links, link)
 		}
 	})
-
+	
 	return links, nil
 }
