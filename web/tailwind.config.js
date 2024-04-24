@@ -2,7 +2,9 @@
 module.exports = {
   content: [
     "./src/App.js",
-    "./src/searchBar.jsx",
+    "./src/components/searchBar.jsx",
+    "./src/components/toggle.jsx",
+    "./src/components/ResultBox.jsx",
 ],
   theme: {
     extend: {},

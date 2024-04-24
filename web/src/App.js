@@ -1,5 +1,7 @@
 import './App.css';
-import SearchBar from './searchBar';
+import SearchBar from './components/searchBar';
+import ColorToggleButton from './components/toggle';
+import ListDefault from './components/ResultBox';
 
 function App() {
   return (
@@ -10,6 +12,12 @@ function App() {
         </div>
         <div className="row my-12">
           <SearchBar />
+        </div>
+        <div className="row my-12">
+          <ColorToggleButton />
+        </div>
+        <div className="row my-12">
+          <ListDefault />
         </div>
       </div>
     </div>
