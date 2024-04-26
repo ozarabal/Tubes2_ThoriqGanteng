@@ -5,6 +5,7 @@ import (
 	"net/http"
     "fmt"
     "strings"
+	"sync"
     "github.com/PuerkitoBio/goquery"
 )
 
@@ -105,48 +106,65 @@ func getPaths(startURL, goalURL string, visited map[string]bool, parent *Node, p
 }
 
 
-func DLS(limit int,goalURL string,visited map[string]bool, parent *Node, paths [][]*Node) ([][]*Node, bool) {
+var wg sync.WaitGroup
+var pathsAns = [][]*Node{}
+var cnt =0
+
+func DLS(limit int,goalURL string,visited map[string]bool, parent *Node, paths [][]*Node) {
+	defer wg.Done()
 	if parent.PageURL == goalURL { 
 		paths = append(paths, getPath(parent))
-		// printParentsUntilRoot(parent)
-		return paths,true
+		pathsAns = make([][]*Node, len(paths))
+    	copy(pathsAns, paths)
+		return 
 	}
 
 	if(limit <=0){
-		return paths,false
+		return 
 	}
-	if visited[parent.PageURL] { 
-		return paths,false
-	}
-	visited[parent.PageURL] = true
+
 	links, err := GetLinks(parent.PageURL)
 	if err != nil {
 		fmt.Println("Error fetching links:", err)
-		return paths,false
+		return 
 	}
 	for _, link := range links {
 		child := &Node{PageURL: link, Parent: parent}
 		
 		if !visited[child.PageURL]{
+			visited[child.PageURL] = true
 			parent.Children = append(parent.Children, child)
 			currentLimit := limit-1
-			paths,found := DLS(currentLimit, goalURL, visited, child, paths)
-			if(found){
-				return paths,true
+			wg.Add(1)
+
+			var wg2 sync.WaitGroup
+			wg2.Add(1)
+			cnt++
+			fmt.Println("cnt : ",cnt)
+			go func(){
+				defer wg2.Done()
+				DLS(currentLimit, goalURL, visited, child, paths)
+			}()
+			wg2.Wait()
+			if len(pathsAns) != 0 {
+	
+				return 
 			}
 		}
-		
 	}
-	
-	return paths,false
 }
 
 func IDS(startURL, goalURL string,visited map[string]bool, parent *Node, paths [][]*Node) ([][]*Node, bool) {
-	pathsAns := [][]*Node{}
-	for depth := 0; depth <= 3; depth++ {	
+	
+	for depth := 0; depth <= 6; depth++ {	
+		fmt.Println("Depth:", depth)
 		visited := make(map[string]bool)
-		pathsAns, found := DLS(depth,goalURL,visited,parent,paths)
-		if  found {
+		wg.Add(1)
+		cnt ++
+		DLS(depth,goalURL,visited,parent,paths)
+		wg.Wait()
+		if  len(pathsAns) != 0 {
+			
 			return pathsAns,true
 		}
 	}
@@ -154,14 +172,26 @@ func IDS(startURL, goalURL string,visited map[string]bool, parent *Node, paths [
 }
 
 
+var (
+    cache    = make(map[string][]string)
+    cacheMux = sync.RWMutex{}
+)
 // getLinks mengambil tautan-tautan dari halaman Wikipedia
 func GetLinks(pageURL string) ([]string, error) {
+	cacheMux.RLock()
+    if doc, found := cache[pageURL]; found {
+        cacheMux.RUnlock()
+        // fmt.Println("Returning cached data")
+        return doc, nil
+    }
+    cacheMux.RUnlock()
+
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", pageURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0") // Set header User-Agent untuk menghindari pemblokiran
+	req.Header.Set("User-Agent", "Mozilla/5.0")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -183,19 +213,20 @@ func GetLinks(pageURL string) ([]string, error) {
 		return nil, err
 	}
 
-	linksMap := make(map[string]bool) // Gunakan map untuk melacak link yang telah ditemukan
-	doc.Find("a").Each(func(_ int, s *goquery.Selection) {
+	links := []string{}
+	doc.Find("a").Each(func(_ int, s *goquery.Selection)  {
 		link, exists := s.Attr("href")
-		if exists && strings.HasPrefix(link, "/wiki/") {
+		if exists && strings.HasPrefix(link, "/wiki/")  {
 			link = "https://en.wikipedia.org" + link
-			linksMap[link] = true // Tambahkan link ke map jika belum ada
+			links = append(links, link)
+			// fmt.Println(link)
 		}
-	})
+	})	
 
-	links := make([]string, 0, len(linksMap)) // Buat slice baru untuk menyimpan link unik
-	for link := range linksMap {
-		links = append(links, link)
-	}
-
+	// Store in cache
+    cacheMux.Lock()
+    cache[pageURL] = links
+    cacheMux.Unlock()
+	
 	return links, nil
 }
