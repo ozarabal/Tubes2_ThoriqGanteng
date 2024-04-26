@@ -26,7 +26,7 @@ type Alignment struct {
 }
 
 type response struct {
-	Result []string `json:"result"`
+	Result [][]string `json:"result"`
 }
 
 func main() {
@@ -55,19 +55,47 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-	links, err := query.GetLinks("https://en.wikipedia.org/wiki/" + data.Start)
-	if err != nil {
-		log.Println("Error getting links:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	response := response{Result: links}
-	log.Println("mode : " + mode)
-	log.Println("data : " + data.Start + ", " + data.Goal)
-	// fmt.Println(response)
+    if mode == "" {
+        log.Println("Error: mode not set")
+        http.Error(w, "Bad Request", http.StatusBadRequest)
+        return
+    } else if mode == "BFS" {
+        var urls []string
+        graph := query.NewGraph()
+        path := make(map[string]bool)
+        path["https://en.wikipedia.org/wiki/"+data.Start] = true
+        urls = append(urls, "https://en.wikipedia.org/wiki/"+data.Start) 
+        graph = query.Bfs2(urls, path, graph,"https://en.wikipedia.org/wiki/"+data.Start, "https://en.wikipedia.org/wiki/"+data.Goal)
+        
+        visitied := make(map[string]bool)
+        temppath := []string{}
+        allpath := [][]string{}
+        query.GetAllPaths(graph, "https://en.wikipedia.org/wiki/"+data.Start, "https://en.wikipedia.org/wiki/"+data.Goal, visitied, temppath, &allpath)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+        response := response{Result:allpath}
+        log.Println("mode : " + mode)
+        log.Println("data : " + data.Start + ", " + data.Goal)
+        // fmt.Println(response)
+    
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(response)
+    } //else if mode == "IDS" {
+    //     links, err := query.GetLinks("https://en.wikipedia.org/wiki/"+data.Start)
+    //     if err != nil {
+    //         log.Println("Error getting links:", err)
+    //         http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+    //         return
+    //     }
+    //     log.Println("IDS")
+    //     response := response{Result:links}
+    //     log.Println("mode : " + mode)
+    //     log.Println("data : " + data.Start + ", " + data.Goal)
+    //     // fmt.Println(response)
+        
+    //     w.Header().Set("Content-Type", "application/json")
+    //     json.NewEncoder(w).Encode(response)
+    // }
+    
 }
 
 func handleSubmitAlignment(w http.ResponseWriter, r *http.Request) {
