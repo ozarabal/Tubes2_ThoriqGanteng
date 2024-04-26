@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ListDefault from './ResultBox';
+import gifImage from './thoriq.gif';
 const SearchBar = ({onResponse}) => {
   const [formData, setFormData] = useState({goal: '', start: ''});
   const [response, setResponse] = useState('');
@@ -92,7 +93,8 @@ const SearchBar = ({onResponse}) => {
       </div>
     </form>
   </div>
-  {isLoading ? <div>Loading...</div>:<ListDefault data={response}/> }
+  {isLoading ? <div className='flex flex-col items-center justify-center'> <img src={gifImage} alt="GIF" style={{ width: '200px', height: 'auto' }} />
+</div>:<ListDefault data={response}/> }
   </>
   );
 };
