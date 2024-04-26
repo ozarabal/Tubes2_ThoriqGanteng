@@ -79,7 +79,18 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
     
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(response)
-    } //else if mode == "IDS" {
+    }else if mode ==  "IDS" {
+		fmt.Println(data.Start,data.Goal)
+		allpath := [][]string{}
+		query.GetPathIDS(data.Start,data.Goal,&allpath)
+		query.PrintAllPathIDS(allpath)
+		response := response{Result:allpath}
+        log.Println("mode : " + mode)
+        log.Println("data : " + data.Start + ", " + data.Goal)
+    
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(response)
+	}//else if mode == "IDS" {
     //     links, err := query.GetLinks("https://en.wikipedia.org/wiki/"+data.Start)
     //     if err != nil {
     //         log.Println("Error getting links:", err)
