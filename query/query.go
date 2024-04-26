@@ -3,7 +3,9 @@ package query
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -386,9 +388,14 @@ func Bfs(links []string, query map[string]bool, graph *Graph, final string, dept
 }
 
 func Bfs2(links []string, query map[string]bool, graph *Graph, start string, final string) *Graph {
-
 	shortDepth := 999999
+	timeoutSeconds := 290
+	timeout := time.Duration(timeoutSeconds) * time.Second
+	startTime := time.Now()
 	for len(links) > 0 {
+		if time.Since(startTime) > timeout {
+			return graph
+		}
 		fmt.Println(len(query))
 		currentLink := links[0]
 		links = links[1:]
@@ -420,68 +427,68 @@ func getLinks(html string, query map[string]bool, graph *Graph, final string) ([
 		fmt.Println("Error fetching the URL:", err)
 	}
 	defer resp.Body.Close()
-	//body, err := ioutil.ReadAll(resp.Body)
-	body, err := goquery.NewDocumentFromReader(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	//body, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body:", err)
 	}
 
-	linkUrl := make(chan string)
+	// linkUrl := make(chan string)
 
-	go func() {
-		body.Find("p a[href]").Each(func(i int, s *goquery.Selection) {
-			href, exists := s.Attr("href")
-			if exists && strings.HasPrefix(href, "/wiki/") && validLink(href) {
-				link := "https://en.wikipedia.org" + href
-				linkUrl <- link
-			}
-		})
-		close(linkUrl)
-	}()
-	var links []string
-	var linkFound []string
-	for link := range linkUrl {
-		if link == final {
-			linkFound = append(linkFound, link)
-			query[link] = true
-			graph.AddEdge(html, link)
-			return linkFound, query, graph, true
-		}
-		if query[link] == false {
-			links = append(links, link)
-			query[link] = true
-			graph.AddEdge(html, link)
-		}
-	}
-
-	// re := regexp.MustCompile(`<a[^>]*href="([^"]*)"[^>]*>`)
-	// matches := re.FindAllStringSubmatch(string(body), -1)
-	// uniqueLinks := make(map[string]bool)
-	// for _, match := range matches {
-	// 	if len(match) > 1 {
-	// 		link := match[1]
-	// 		if validLink(link) && !uniqueLinks[link] && !query[link] {
-	// 			uniqueLinks[link] = true
+	// go func() {
+	// 	body.Find("p a[href]").Each(func(i int, s *goquery.Selection) {
+	// 		href, exists := s.Attr("href")
+	// 		if exists && strings.HasPrefix(href, "/wiki/") && validLink(href) {
+	// 			link := "https://en.wikipedia.org" + href
+	// 			linkUrl <- link
 	// 		}
-	// 	}
-	// }
+	// 	})
+	// 	close(linkUrl)
+	// }()
 	// var links []string
 	// var linkFound []string
-	// for link := range uniqueLinks {
-	// 	link = "https://en.wikipedia.org" + link
+	// for link := range linkUrl {
 	// 	if link == final {
 	// 		linkFound = append(linkFound, link)
 	// 		query[link] = true
 	// 		graph.AddEdge(html, link)
 	// 		return linkFound, query, graph, true
 	// 	}
-
 	// 	if query[link] == false {
 	// 		links = append(links, link)
 	// 		query[link] = true
 	// 		graph.AddEdge(html, link)
 	// 	}
 	// }
+
+	re := regexp.MustCompile(`<a[^>]*href="([^"]*)"[^>]*>`)
+	matches := re.FindAllStringSubmatch(string(body), -1)
+	uniqueLinks := make(map[string]bool)
+	for _, match := range matches {
+		if len(match) > 1 {
+			link := match[1]
+			if validLink(link) && !uniqueLinks[link] && !query[link] {
+				uniqueLinks[link] = true
+			}
+		}
+	}
+	var links []string
+	var linkFound []string
+	for link := range uniqueLinks {
+		link = "https://en.wikipedia.org" + link
+		if link == final {
+			linkFound = append(linkFound, link)
+			query[link] = true
+			graph.AddEdge(html, link)
+			return linkFound, query, graph, true
+		}
+
+		if query[link] == false {
+			links = append(links, link)
+			query[link] = true
+			graph.AddEdge(html, link)
+		}
+	}
 	return links, query, graph, false
 }
 

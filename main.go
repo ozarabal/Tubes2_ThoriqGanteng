@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 
 	// "time"
 	"Tubes2_ThoriqGanteng/query"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 )
