@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const SearchBar = () => {
+const SearchBar = ({onResponse}) => {
   const [formData, setFormData] = useState({goal: '', start: ''});
   const [response, setResponse] = useState('');
 
@@ -31,6 +31,7 @@ const SearchBar = () => {
       }
       const data = await response.json();
       setResponse(data);
+      onResponse(data);
     } catch (error) {
       console.error('There was an error!', error);
     }
@@ -87,13 +88,6 @@ const SearchBar = () => {
         </div>
       </div>
     </form>
-    <div className="row">
-      <div className="flex flex-col items-center justify-center">
-        <p className="mt-4 text-center text-xl font-bold">
-          {response.massage}
-        </p>
-      </div>
-    </div>
   </div>
   );
 };

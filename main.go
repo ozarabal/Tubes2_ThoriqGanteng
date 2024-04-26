@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"log"
 )
+var mode string = ""
 
 type FormData struct {
     Start string `json:"start"`
@@ -60,8 +61,10 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
         return
     }
     response := response{Result:links}
+    log.Println("mode : " + mode)
 	log.Println("data : " + data.Start + ", " + data.Goal)
 	// fmt.Println(response)
+    
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
 }
@@ -89,6 +92,11 @@ func handleSubmitAlignment(w http.ResponseWriter, r *http.Request) {
     }
     pilihan := Alignment{Pilihan: data.Tipe}
     log.Println("data : " + data.Tipe)
+    if data.Tipe == "BFS" {
+        mode = "BFS"
+    } else if data.Tipe == "IDS" {
+        mode = "IDS"
+    }
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(pilihan)
 }
