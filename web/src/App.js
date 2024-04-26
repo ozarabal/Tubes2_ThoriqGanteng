@@ -17,10 +17,11 @@ function App() {
           <h1 className="text-4xl font-bold text-center mt-8 mb-8">Hello World</h1>
         </div>
         <div className="row my-12">
-          <SearchBar onResponse={handleResponse}/>
+          <ColorToggleButton />
+
         </div>
         <div className="row my-12">
-          <ColorToggleButton />
+          <SearchBar onResponse={handleResponse}/>
         </div>
         <div className="row my-12">
           <ListDefault data={responseData}/>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-
+import ListDefault from './ResultBox';
 const SearchBar = ({onResponse}) => {
   const [formData, setFormData] = useState({goal: '', start: ''});
   const [response, setResponse] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
 
   const handleChange = (evt) => {
     const changedField = evt.target.name;
@@ -17,7 +19,7 @@ const SearchBar = ({onResponse}) => {
   
   const handleSubmit = async (evt) => {
     evt.preventDefault();
-  
+    setIsLoading(true);
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -32,6 +34,7 @@ const SearchBar = ({onResponse}) => {
       const data = await response.json();
       setResponse(data);
       onResponse(data);
+      setIsLoading(false);
     } catch (error) {
       console.error('There was an error!', error);
     }
@@ -42,7 +45,7 @@ const SearchBar = ({onResponse}) => {
     console.log('State response berubah:', response);
   }, [response]); // Tambahkan response sebagai dependensi
 
-  return (
+  return (<>
       <div className="flex flex-col items-center justify-center">
     <form onSubmit={handleSubmit}>
       <div className="row">
@@ -89,6 +92,8 @@ const SearchBar = ({onResponse}) => {
       </div>
     </form>
   </div>
+  {isLoading ? <div>Loading...</div>:<ListDefault data={response}/> }
+  </>
   );
 };
 
