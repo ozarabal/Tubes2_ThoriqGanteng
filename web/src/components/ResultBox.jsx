@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { List, ListItem, Card } from '@material-tailwind/react';
 
 const ListDefault = ({ data }) => {
@@ -8,6 +7,8 @@ const ListDefault = ({ data }) => {
   }
 
   // Ubah data menjadi format yang diinginkan dengan menambahkan spasi setiap i+1
+
+  
   const formattedData = data.result.map((row, i) =>
   row.map((item, j) => {
       const linkText = item.replace('https://en.wikipedia.org/wiki/', ''); // Menghapus bagian yang tidak diinginkan dari tautan
