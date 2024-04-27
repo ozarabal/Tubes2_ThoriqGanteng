@@ -82,7 +82,8 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
     }else if mode ==  "IDS" {
 		fmt.Println(data.Start,data.Goal)
 		allpath := [][]string{}
-		query.GetPathIDS(data.Start,data.Goal,&allpath)
+		query.GetPathIDS(data.Start,data.Goal,&allpath,"FIRST")
+		// query.GetPathIDS(data.Start,data.Goal,&allpath,"ALL")
 		query.PrintAllPathIDS(allpath)
 		response := response{Result:allpath}
         log.Println("mode : " + mode)
