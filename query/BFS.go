@@ -67,7 +67,7 @@ func GetAllPaths(graph *Graph, start string, final string, visited map[string]bo
 }
 
 // Fungsi untuk mendapatkan path terpendek dari start hingga final dengan menggunakan algoritma BFS
-func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start string, final string) *Graph {
+func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start string, final string, choice bool) *Graph {
 	// Menginisiasi kedalaman terpendek dan memulai waktu pencarian
 	shortDepth := 999999
 	timeoutSeconds := 290
@@ -99,6 +99,9 @@ func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start 
 		// Jika link final ketemu, maka kedalaman sekarang akan dijadikan sebagai kedalaman terpendek
 		if found2 == true {
 			shortDepth = graph.maxDepth(start)
+			if choice == true {
+				break // kondisi jika diminta hanya first path
+			}
 		}
 	}
 	return graph
@@ -152,8 +155,6 @@ func getLinks(html string, visitedLink map[string]bool, graph *Graph, final stri
 
 // Fungsi untuk mengecek apakah link tersebut termasuk link yang valid atau tidak
 func validLink(link string) bool {
-	if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "(") && !strings.Contains(link, ".") && !strings.Contains(link, ",") && !strings.Contains(link, ":") && !strings.Contains(link, "#") && !strings.Contains(link, "%") && strings.ContainsAny(link, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-		return true
-	}
-	return false
+	matched, _ := regexp.MatchString(`^/wiki/[A-Z][^(),:%#]*$`, link)
+	return matched && !strings.Contains(link, ".")
 }
