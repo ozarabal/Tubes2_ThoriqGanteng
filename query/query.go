@@ -84,10 +84,10 @@ var tOutSeconds int
 var tOut time.Duration
 var startT time.Time
 
-func DLS(limit int,goalURL string,visited map[string]bool, parent *Node) {
+func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
 	defer wg.Done()
 	cnt++
-	// fmt.Println("cnt : ",cnt)
+	fmt.Println("cnt : ",cnt)
 
 	if time.Since(startT) > tOut {
 		return
@@ -95,7 +95,7 @@ func DLS(limit int,goalURL string,visited map[string]bool, parent *Node) {
 
 	if parent.PageURL == goalURL { 
 		pathsAns = append(pathsAns, getPath(parent))
-		// return 
+		
 	}
 
 	if(limit <=0){
@@ -107,28 +107,37 @@ func DLS(limit int,goalURL string,visited map[string]bool, parent *Node) {
 		fmt.Println("Error fetching links:", err)
 		return 
 	}
+	var mxGo int
+	if(mxLimit <=2){
+		mxGo = 50
+	}else if (mxLimit == 3){
+		mxGo = 25
+	}else if (mxLimit == 4){
+		mxGo = 10
+	}else{
+		mxGo = 5
+	}
+	goCnt := 0
 	for _, link := range links {
 		child := &Node{PageURL: link, Parent: parent}
 		
-		// if !visited[child.PageURL]{
-			visited[child.PageURL] = true
-			parent.Children = append(parent.Children, child)
-			currentLimit := limit-1
-			wg.Add(1)
+		parent.Children = append(parent.Children, child)
+		currentLimit := limit-1
+		wg.Add(1)
 
-			var wg2 sync.WaitGroup
-			wg2.Add(1)
-			
-			go func(){
-				defer wg2.Done()
-				DLS(currentLimit, goalURL, visited, child)
-			}()
+		var wg2 sync.WaitGroup
+		wg2.Add(1)
+		goCnt++
+		
+		go func(){
+			defer wg2.Done()
+			DLS(currentLimit, goalURL, mxLimit, child)
+		}()
+		if goCnt>=mxGo{
 			wg2.Wait()
-			// if len(pathsAns) != 0 {
-	
-			// 	return 
-			// }
-		// }
+			goCnt = 0;
+		}
+			
 	}
 }
 
@@ -148,11 +157,10 @@ func IDS(startURL, goalURL string,visited map[string]bool, parent *Node) ([][]*N
 			}
 		}
 		fmt.Println("Depth:", depth)
-		visited := make(map[string]bool)
-		visited[parent.PageURL] = true
+		
 		wg.Add(1)
 		cnt ++
-		DLS(depth,goalURL,visited,parent)
+		DLS(depth,goalURL,depth,parent)
 		wg.Wait()
 		if  len(pathsAns) != 0 {
 			
