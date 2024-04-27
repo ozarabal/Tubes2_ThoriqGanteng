@@ -3,9 +3,7 @@ package query
 import (
 	"fmt"
 	"io"
-	// "io/ioutil"
 	"net/http"
-	// "regexp"
 	"strings"
 	"sync"
 	"time"
@@ -20,25 +18,24 @@ type Node struct {
 	Parent   *Node   // Parent dari node
 }
 
+
+// Fungsi untuk mendapatkan path menggunakan algoritma IDS
 func GetPathIDS(start, goal string,allPaths *[][]string){
 	startURL := "https://en.wikipedia.org/wiki/" + start
 	goalURL := "https://en.wikipedia.org/wiki/" + goal
 	fmt.Println("Start URL:", startURL)
 	root := &Node{PageURL: startURL} // Membuat node root dengan startURL sebagai PageURL
-	visited := make(map[string]bool) // Membuat map untuk menyimpan node yang sudah dieksplorasi
 
-	// paths := [][]*Node{}
-	paths, found := IDS(startURL, goalURL, visited, root)
+	paths, found := IDS(startURL, goalURL, root)
+
 	if !found{
-		fmt.Println("shortest path not found")
-		// return nil, fmt.Errorf("shortest path not found")
+		fmt.Println("shortest path not found") // Kondisi jika path tidak ditemukan
 	}
 	getAllPathIDS(paths,allPaths)
-	// PrintAllPathIDS(*allPaths)
 	
-	// return paths, nil // Mengembalikan jalur terpendek dari startURL ke goalURL
 }
 
+// Fungsi untuk mecetak seluruh path
 func PrintAllPathIDS(paths [][]string){
 	fmt.Println("Number of Paths:", len(paths))
 	for i := range paths{
@@ -49,6 +46,7 @@ func PrintAllPathIDS(paths [][]string){
 	}
 }
 
+// Fungsi untuk mendapatkan seluruh path
 func getAllPathIDS(paths [][]*Node,allPaths *[][]string){
 	for i := range paths{
 		path := []string{}
@@ -61,6 +59,7 @@ func getAllPathIDS(paths [][]*Node,allPaths *[][]string){
 	}
 }
 
+// Fungsi untuk mendapatkan path dari node leaf
 func getPath(leaf *Node) []*Node {
 	path := []*Node{leaf} // Mulai dengan node leaf sebagai bagian dari jalur
 	current := leaf
@@ -84,44 +83,45 @@ var tOutSeconds int
 var tOut time.Duration
 var startT time.Time
 
+// Fungsi DLS
 func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
-	defer wg.Done()
-	cnt++
+	defer wg.Done() 
+	cnt++ // Mengitung jumlah link yang di cek
 	fmt.Println("cnt : ",cnt)
 
 	if time.Since(startT) > tOut {
-		return
+		return // Jika waktu habis keluar dari fungsi
 	}
 
 	if parent.PageURL == goalURL { 
-		pathsAns = append(pathsAns, getPath(parent))
+		pathsAns = append(pathsAns, getPath(parent)) // Jika goalURL ditemukan tambahkan ke pathsAns
 		
 	}
 
 	if(limit <=0){
-		return 
+		return // Jika sudah melebihi depth keluar dari fungsi
 	}
 
-	links, err := GetLinks(parent.PageURL)
+	links, err := GetLinks(parent.PageURL) // Ambil seluruh link dari page url
 	if err != nil {
 		fmt.Println("Error fetching links:", err)
 		return 
 	}
 	var mxGo int
 	if(mxLimit <=2){
-		mxGo = 50
+		mxGo = 50  // Depth <= 2 maksimal goroutine adalah 50 
 	}else if (mxLimit == 3){
-		mxGo = 25
+		mxGo = 25	// Depth = 3 maksimal goroutine adalah 25
 	}else if (mxLimit == 4){
-		mxGo = 10
+		mxGo = 10 // Depth = 4 maksimal goroutine adalah 10
 	}else{
-		mxGo = 5
+		mxGo = 5 // Depth > 4 maksimal goroutine adalah 50
 	}
-	goCnt := 0
-	for _, link := range links {
+	goCnt := 0 // counter untuk menghitung banyak goroutine yang sedang berjalan
+
+	for _, link := range links { // Iterasi seluruh link yang didapatkan
 		child := &Node{PageURL: link, Parent: parent}
-		
-		parent.Children = append(parent.Children, child)
+		parent.Children = append(parent.Children, child) // Tambahkan Node link ke parent 
 		currentLimit := limit-1
 		wg.Add(1)
 
@@ -131,7 +131,7 @@ func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
 		
 		go func(){
 			defer wg2.Done()
-			DLS(currentLimit, goalURL, mxLimit, child)
+			DLS(currentLimit, goalURL, mxLimit, child) // Panggil DLS untuk kedalaman selanjutnya
 		}()
 		if goCnt>=mxGo{
 			wg2.Wait()
@@ -141,17 +141,17 @@ func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
 	}
 }
 
-func IDS(startURL, goalURL string,visited map[string]bool, parent *Node) ([][]*Node, bool) {
-	tOutSeconds = 290
+// Fungsi IDS
+func IDS(startURL, goalURL string, parent *Node) ([][]*Node, bool) {
+	tOutSeconds = 290 // maksimum time out 290 detik
 	pathsAns = [][]*Node{}
-	// fmt.Println(len(pathsAns))
 	cnt = 0
 	tOut = time.Duration(tOutSeconds) * time.Second
 	startT = time.Now()
-	for depth := 0; depth <= 6; depth++ {	
+	for depth := 0; depth <= 6; depth++ {	// Iterasi depth mulai dari 0 sampai 6
 		if time.Since(startT) > tOut {
 			if  len(pathsAns) != 0 {
-				return pathsAns,true
+				return pathsAns,true // Jika waktu sudah habis kembalikan pathsAns
 			}else{
 				return pathsAns,false
 			}
@@ -160,7 +160,7 @@ func IDS(startURL, goalURL string,visited map[string]bool, parent *Node) ([][]*N
 		
 		wg.Add(1)
 		cnt ++
-		DLS(depth,goalURL,depth,parent)
+		DLS(depth,goalURL,depth,parent) // Panggil DLS dengan parent adalah root
 		wg.Wait()
 		if  len(pathsAns) != 0 {
 			
@@ -175,16 +175,17 @@ var (
     cache    = make(map[string][]string)
     cacheMux = sync.RWMutex{}
 )
+
 // getLinks mengambil tautan-tautan dari halaman Wikipedia
 func GetLinks(pageURL string) ([]string, error) {
 	cacheMux.RLock()
     if doc, found := cache[pageURL]; found {
-        cacheMux.RUnlock()
-        // fmt.Println("Returning cached data")
+        cacheMux.RUnlock() // Cek apakah pageURL telah tersimpan di cache
         return doc, nil
     }
     cacheMux.RUnlock()
 
+	// Membuat HTTP request untuk halaman URL yang diberikan
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", pageURL, nil)
 	if err != nil {
@@ -192,37 +193,41 @@ func GetLinks(pageURL string) ([]string, error) {
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
+	// Mengirimkan request dan menerima response
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	// Memeriksa status response
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch page: %s", resp.Status)
 	}
 
+	// Membaca isi dari response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
+	// Membuat dokumen HTML dari isi body
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, err
 	}
 
+	// Menemukan dan mengekstrak tautan-tautan yang valid dalam dokumen
 	links := []string{}
 	doc.Find("a").Each(func(_ int, s *goquery.Selection)  {
 		link, exists := s.Attr("href")
 		if exists && strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "Main_Page") && !strings.Contains(link, ":") {
 			link = "https://en.wikipedia.org" + link
 			links = append(links, link)
-			// fmt.Println(link)
 		}
 	})	
 
-	// Store in cache
+	// Menyimpan hasil tautan di cache
     cacheMux.Lock()
     cache[pageURL] = links
     cacheMux.Unlock()
