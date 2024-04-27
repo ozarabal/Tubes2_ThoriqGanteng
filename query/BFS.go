@@ -67,7 +67,7 @@ func GetAllPaths(graph *Graph, start string, final string, visited map[string]bo
 }
 
 // Fungsi untuk mendapatkan path terpendek dari start hingga final dengan menggunakan algoritma BFS
-func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start string, final string) *Graph {
+func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start string, final string, choice bool) *Graph {
 	// Menginisiasi kedalaman terpendek dan memulai waktu pencarian
 	shortDepth := 999999
 	timeoutSeconds := 290
@@ -99,6 +99,9 @@ func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start 
 		// Jika link final ketemu, maka kedalaman sekarang akan dijadikan sebagai kedalaman terpendek
 		if found2 == true {
 			shortDepth = graph.maxDepth(start)
+			if choice == true {
+				break // kondisi jika diminta hanya first path
+			}
 		}
 	}
 	return graph
