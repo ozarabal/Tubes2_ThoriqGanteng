@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
     "github.com/rs/cors"
 	"net/url"
+    "strconv"
 )
 
 var mode string = ""
@@ -31,9 +32,10 @@ type Alignment struct {
 
 type response struct {
 	Result [][]string `json:"result"`
-    waktu int `json:"waktu"`
-    banyak_path int `json:"banyak_path"`
-    banyak_jelajah int `json:"banyak_jelajah"`
+    Waktu string `json:"waktu"`
+    Banyak_path string `json:"banyak_path"`
+    Banyak_jelajah string `json:"banyak_jelajah"`
+    Kedalaman string `json:"kedalaman"`
 
 }
 
@@ -88,19 +90,27 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
         path["https://en.wikipedia.org/wiki/"+data.Start] = true
         urls = append(urls, "https://en.wikipedia.org/wiki/"+data.Start) 
 		time_start := time.Now()
-        graph = query.Bfs2(urls, path, graph,"https://en.wikipedia.org/wiki/"+data.Start, "https://en.wikipedia.org/wiki/"+data.Goal,boole)
+        graph, path = query.Bfs2(urls, path, graph,"https://en.wikipedia.org/wiki/"+data.Start, "https://en.wikipedia.org/wiki/"+data.Goal,boole)
         
         visitied := make(map[string]bool)
         temppath := []string{}
         allpath := [][]string{}
-        int banyakpath = len(allallpath)
+        
 
         query.GetAllPaths(graph, "https://en.wikipedia.org/wiki/"+data.Start, "https://en.wikipedia.org/wiki/"+data.Goal, visitied, temppath, &allpath)
 		time_end := time.Now()
 		elapsed := time_end.Sub(time_start)
+        
         elapsedSeconds := int(elapsed.Seconds())
+        banyakpath := len(allpath)
+        banyaklink := len(path)
+        kedalamanpath := len(allpath[0])
+        strBanyakPath := strconv.Itoa(banyakpath)
+        strBanyakLink := strconv.Itoa(banyaklink)
+        strKedalamanPath := strconv.Itoa(kedalamanpath)
+        strwaktu := strconv.Itoa(elapsedSeconds)
 
-        response  := response{Result:allpath, waktu:elapsedSeconds, banyak_path:banyakpath}
+        response  := response{Result:allpath, Waktu:strwaktu, Banyak_path:strBanyakPath, Banyak_jelajah:strBanyakLink, Kedalaman: strKedalamanPath}
         log.Println("mode : " + mode)
         log.Println("data : " + data.Start + ", " + data.Goal)
         // fmt.Println(response)
@@ -110,13 +120,28 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
     }else if mode ==  "IDS" {
 		fmt.Println(data.Start,data.Goal)
 		allpath := [][]string{}
-		query.GetPathIDS(data.Start,data.Goal,&allpath,"FIRST")
-		// query.GetPathIDS(data.Start,data.Goal,&allpath,"ALL")
+        time_start := time.Now()
+        if pilihan_tipe == "First" {   
+		    query.GetPathIDS(data.Start,data.Goal,&allpath,"FIRST")
+        } else if pilihan_tipe == "All" {
+            query.GetPathIDS(data.Start,data.Goal,&allpath,"ALL")
+        }
 		query.PrintAllPathIDS(allpath)
-		response := response{Result:allpath}
+        time_end := time.Now()
+        elapsed := time_end.Sub(time_start)
+        banyakpath := len(allpath)
+        banyaklink := query.GetCnt()
+        kedalamanpath := len(allpath[0])
+        strBanyakPath := strconv.Itoa(banyakpath)
+        strBanyakLink := strconv.Itoa(banyaklink)
+        strKedalamanPath := strconv.Itoa(kedalamanpath)
+        strwaktu := strconv.Itoa(int(elapsed.Seconds()))
+
+
+        response  := response{Result:allpath, Waktu:strwaktu, Banyak_path:strBanyakPath, Banyak_jelajah:strBanyakLink, Kedalaman: strKedalamanPath}
         log.Println("mode : " + mode)
         log.Println("data : " + data.Start + ", " + data.Goal)
-    
+
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(response)
 	}//else if mode == "IDS" {

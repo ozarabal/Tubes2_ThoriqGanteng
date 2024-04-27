@@ -1,7 +1,7 @@
 import { List, ListItem, Card } from '@material-tailwind/react';
 
 const ListDefault = ({ data }) => {
-
+  console.log(data);
   if (!data || !data.result || !Array.isArray(data.result) || data.result.length === 0) {
     return null; // Kembalikan null jika tidak ada data atau data tidak sesuai
   }
@@ -31,9 +31,37 @@ const ListDefault = ({ data }) => {
       {i < formattedData.length - 1 && <br />} {/* Tambahkan baris baru jika bukan baris terakhir */}
     </div>
   ));
+  const banyak_path = data.banyak_path;
+  const waktup = data.waktu;
+  const banyaklink = data.banyak_jelajah;
+  const kedalaman = data.kedalaman;
 
   return (
     <div className="flex flex-col items-center justify-center">
+      <div className='row mb-10'>
+        <div className='col flex border-b-4 border-r-4 border-blue-700 rounded-lg bg-blue-500 p-4'>
+          <div className='col md-6 mr-8'>
+            <div className='row'>
+              <h1 className="text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">Banyak Path:</h1>
+              <h2 className= "text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">{banyak_path}</h2>
+            </div>
+            <div className='row'>
+              <h1 className="text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">Banyaknya link :</h1>
+                <h2 className= "text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">{banyaklink}</h2>
+            </div> 
+          </div>
+          <div className='col md-6 ml-8'>
+            <div className='row'>
+              <h1 className="text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">Waktu Pencarian :</h1>
+              <h2 className="text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">{waktup} detik</h2>
+            </div>
+            <div className='row'>
+              <h1 className="text-2x1 font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">Artikel dilalui :</h1>
+              <h2 className="text-2xl font-bold font-serif text-center mt-8 mb-8 text-white bg-blue-500">{kedalaman}</h2>
+            </div>
+          </div>
+        </div>
+      </div>
       <Card className="w-200">
         <List>
           <ListItem>

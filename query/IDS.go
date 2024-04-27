@@ -38,6 +38,9 @@ func GetPathIDS(start, goal string,allPaths *[][]string,method string){
 	}
 }
 
+func GetCnt () int {
+	return cnt
+}
 // Fungsi untuk mecetak seluruh path
 func PrintAllPathIDS(paths [][]string){
 	fmt.Println("Number of Paths:", len(paths))
