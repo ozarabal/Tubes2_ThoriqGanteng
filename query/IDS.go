@@ -164,6 +164,9 @@ func DLS(limit int,goalURL string,mxLimit int, parent *Node,method string) {
 				return 
 			}
 		}
+		if time.Since(startT) > tOut {
+			return // Jika waktu habis keluar dari fungsi
+		}
 	}
 }
 
@@ -243,13 +246,20 @@ func GetLinks(pageURL string) ([]string, error) {
 		return nil, err
 	}
 
+	cekLink := make(map[string]bool)
+	cekLink [pageURL] = true
+
 	// Menemukan dan mengekstrak tautan-tautan yang valid dalam dokumen
 	links := []string{}
 	doc.Find("a").Each(func(_ int, s *goquery.Selection)  {
 		link, exists := s.Attr("href")
 		if exists && strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "Main_Page") && !strings.Contains(link, ":") {
 			link = "https://en.wikipedia.org" + link
-			links = append(links, link)
+			if !cekLink[link]{ // Cek link unik atau tidak
+				links = append(links, link) 
+				cekLink[link] = true
+			}
+			
 		}
 	})	
 
