@@ -20,19 +20,22 @@ type Node struct {
 
 
 // Fungsi untuk mendapatkan path menggunakan algoritma IDS
-func GetPathIDS(start, goal string,allPaths *[][]string){
+func GetPathIDS(start, goal string,allPaths *[][]string,method string){
 	startURL := "https://en.wikipedia.org/wiki/" + start
 	goalURL := "https://en.wikipedia.org/wiki/" + goal
 	fmt.Println("Start URL:", startURL)
 	root := &Node{PageURL: startURL} // Membuat node root dengan startURL sebagai PageURL
 
-	paths, found := IDS(startURL, goalURL, root)
+	paths, found := IDS(startURL, goalURL, root, method)
 
 	if !found{
 		fmt.Println("shortest path not found") // Kondisi jika path tidak ditemukan
 	}
-	getAllPathIDS(paths,allPaths)
-	
+	if(method == "FIRST"){
+		getFirstPathIDS(paths,allPaths)
+	}else if(method == "ALL"){
+		getAllPathIDS(paths,allPaths)
+	}
 }
 
 // Fungsi untuk mecetak seluruh path
@@ -57,6 +60,17 @@ func getAllPathIDS(paths [][]*Node,allPaths *[][]string){
 		}
 		*allPaths = append(*allPaths,path)
 	}
+}
+
+// Fungsi untuk mendapatkan path pertama
+func getFirstPathIDS(paths [][]*Node,allPaths *[][]string){
+	path := []string{}
+	for _, node := range paths[0] {
+		prefix := "https://en.wikipedia.org/wiki/"
+		cleanURL := strings.TrimPrefix(node.PageURL, prefix)
+		path = append(path, cleanURL) 
+	}
+	*allPaths = append(*allPaths,path)
 }
 
 // Fungsi untuk mendapatkan path dari node leaf
@@ -84,10 +98,16 @@ var tOut time.Duration
 var startT time.Time
 
 // Fungsi DLS
-func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
+func DLS(limit int,goalURL string,mxLimit int, parent *Node,method string) {
 	defer wg.Done() 
 	cnt++ // Mengitung jumlah link yang di cek
 	fmt.Println("cnt : ",cnt)
+
+	if (method == "FIRST"){
+		if  len(pathsAns) != 0 { // Jika method adalah FIRST dan path ditemukan, keluar dari fungsi
+			return 
+		}
+	}
 
 	if time.Since(startT) > tOut {
 		return // Jika waktu habis keluar dari fungsi
@@ -95,7 +115,9 @@ func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
 
 	if parent.PageURL == goalURL { 
 		pathsAns = append(pathsAns, getPath(parent)) // Jika goalURL ditemukan tambahkan ke pathsAns
-		
+		if (method == "FIRST"){
+			return
+		}
 	}
 
 	if(limit <=0){
@@ -131,18 +153,22 @@ func DLS(limit int,goalURL string,mxLimit int, parent *Node) {
 		
 		go func(){
 			defer wg2.Done()
-			DLS(currentLimit, goalURL, mxLimit, child) // Panggil DLS untuk kedalaman selanjutnya
+			DLS(currentLimit, goalURL, mxLimit, child,method) // Panggil DLS untuk kedalaman selanjutnya
 		}()
 		if goCnt>=mxGo{
 			wg2.Wait()
 			goCnt = 0;
 		}
-			
+		if (method == "FIRST"){
+			if  len(pathsAns) != 0 {
+				return 
+			}
+		}
 	}
 }
 
 // Fungsi IDS
-func IDS(startURL, goalURL string, parent *Node) ([][]*Node, bool) {
+func IDS(startURL, goalURL string, parent *Node, method string) ([][]*Node, bool) {
 	tOutSeconds = 290 // maksimum time out 290 detik
 	pathsAns = [][]*Node{}
 	cnt = 0
@@ -160,7 +186,7 @@ func IDS(startURL, goalURL string, parent *Node) ([][]*Node, bool) {
 		
 		wg.Add(1)
 		cnt ++
-		DLS(depth,goalURL,depth,parent) // Panggil DLS dengan parent adalah root
+		DLS(depth,goalURL,depth,parent,method) // Panggil DLS dengan parent adalah root
 		wg.Wait()
 		if  len(pathsAns) != 0 {
 			
