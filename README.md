@@ -10,9 +10,8 @@ Strategi Algoritma - IF2211
 - [Deskripsi Permasalahan](#Deksripsi-Permasalahan)
 - [Anggota Kelompok](#Anggota-Kelompok)
 - [Fitur](#Fitur)
-- [Libraries Yang Digunakan](#Libraries-Yang-Digunakan)
+- [Dependencies Yang Dibutuhkan](#Dependencies Yang Dibutuhkan)
 - [Cara Menggunakan](#Cara-Menggunakan)
-- [Screenshot](#Screenshot)
 - [Project Status](#project-status)
 - [Acknowledgements](#acknowledgements)
 
