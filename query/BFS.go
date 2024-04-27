@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+
 	// "sync"
 	"time"
-
 	// "github.com/PuerkitoBio/goquery"
 )
 
@@ -27,30 +27,6 @@ func NewGraph() *Graph {
 
 func (g *Graph) AddEdge(src, dest string) {
 	g.adjacencyList[src] = append(g.adjacencyList[src], dest)
-}
-
-func PrintGraph(graph *Graph, start, end string) {
-	visited := make(map[string]bool)
-	path := []string{start}
-	var dfs func(node string) bool
-	dfs = func(node string) bool {
-		if node == end {
-			fmt.Println("Path:", strings.Join(path, " -> "))
-			return true
-		}
-		visited[node] = true
-		for _, neighbor := range graph.adjacencyList[node] {
-			if !visited[neighbor] {
-				path = append(path, neighbor)
-				if dfs(neighbor) {
-					return true
-				}
-				path = path[:len(path)-1]
-			}
-		}
-		return false
-	}
-	dfs(start)
 }
 
 func (g *Graph) maxDepth(node string) int {
@@ -72,47 +48,6 @@ func (g *Graph) searchMax(node string) int {
 	return 1 + maxDepth
 }
 
-func PrintAllPaths(graph *Graph, start, end string, visited map[string]bool, path []string) {
-	visited[start] = true
-	path = append(path, start)
-	if start == end {
-		fmt.Println("Path:", strings.Join(path, " -> "))
-	} else {
-		for _, neighbor := range graph.adjacencyList[start] {
-			if !visited[neighbor] {
-				PrintAllPaths(graph, neighbor, end, visited, path)
-			}
-		}
-	}
-	path = path[:len(path)-1]
-	visited[start] = false
-}
-
-func (g *Graph) PrintAllPaths2() {
-	for src := range g.adjacencyList {
-		g.visited = make(map[string]bool)
-		g.printAllPathsUtil(src, src, []string{})
-	}
-}
-
-func (g *Graph) printAllPathsUtil(start, current string, path []string) {
-	g.visited[current] = true
-	path = append(path, current)
-
-	if start != current {
-		fmt.Println(path)
-	}
-
-	for _, v := range g.adjacencyList[current] {
-		if !g.visited[v] {
-			g.printAllPathsUtil(start, v, path)
-		}
-	}
-
-	// Mark the current node as unvisited to explore other paths
-	g.visited[current] = false
-}
-
 func GetAllPaths(graph *Graph, start, end string, visited map[string]bool, path []string, allPaths *[][]string) {
 	visited[start] = true
 	path = append(path, start)
@@ -127,43 +62,6 @@ func GetAllPaths(graph *Graph, start, end string, visited map[string]bool, path 
 	}
 	path = path[:len(path)-1]
 	visited[start] = false
-}
-
-func PrintAllPaths2(allPaths [][]string) {
-	for _, path := range allPaths {
-		fmt.Println("Path:", strings.Join(path, " -> "))
-	}
-}
-
-func Bfs(links []string, query map[string]bool, graph *Graph, final string, depth int) *Graph {
-	found := false
-	fmt.Println(depth)
-	fmt.Println(len(links))
-	fmt.Println(len(query))
-	i := 0
-	var newLinks []string
-	for _, link := range links {
-		i++
-		//fmt.Println(i)
-		links2, query2, graph2, found2 := getLinks(link, query, graph, final)
-		query = query2
-		newLinks = append(newLinks, links2...)
-		graph = graph2
-		if found2 == true {
-			found = true
-		}
-		if found2 == true {
-			fmt.Println(len(query2))
-			break
-		}
-	}
-	//graph.PrintAllPaths2()
-	if found == false {
-		depth++
-		Bfs(newLinks, query, graph, final, depth)
-	}
-	fmt.Println(len(query))
-	return graph
 }
 
 func Bfs2(links []string, query map[string]bool, graph *Graph, start string, final string) *Graph {
