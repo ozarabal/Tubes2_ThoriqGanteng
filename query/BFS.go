@@ -2,22 +2,20 @@ package query
 
 import (
 	"fmt"
-	// "io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
-
-	// "sync"
 	"time"
-	// "github.com/PuerkitoBio/goquery"
 )
 
+// Graph adalah tipe ada yang digunakan untuk menyimpan berbagai link
 type Graph struct {
 	adjacencyList map[string][]string
 	visited       map[string]bool
 }
 
+// Fungsi untuk membuat graf baru
 func NewGraph() *Graph {
 	return &Graph{
 		adjacencyList: make(map[string][]string),
@@ -25,15 +23,18 @@ func NewGraph() *Graph {
 	}
 }
 
+// Fungsi untuk menambahkan sisi dalam graf dimana meminta parameter parent link dan child link
 func (g *Graph) AddEdge(src, dest string) {
 	g.adjacencyList[src] = append(g.adjacencyList[src], dest)
 }
 
+// Fungsi untuk mendapatkan kedalaman maksimal dalam graf
 func (g *Graph) maxDepth(node string) int {
-	g.visited = make(map[string]bool) // Reset visited map for each call
+	g.visited = make(map[string]bool)
 	return g.searchMax(node)
 }
 
+// Fungsi untuk mencari kedalaman maksimal graf
 func (g *Graph) searchMax(node string) int {
 	g.visited[node] = true
 	maxDepth := 0
@@ -48,15 +49,16 @@ func (g *Graph) searchMax(node string) int {
 	return 1 + maxDepth
 }
 
-func GetAllPaths(graph *Graph, start, end string, visited map[string]bool, path []string, allPaths *[][]string) {
+// Fungsi untuk mendapatkan semua path yang terhubung dari start hinga final
+func GetAllPaths(graph *Graph, start string, final string, visited map[string]bool, path []string, allPaths *[][]string) {
 	visited[start] = true
 	path = append(path, start)
-	if start == end {
+	if start == final {
 		*allPaths = append(*allPaths, append([]string{}, path...))
 	} else {
 		for _, neighbor := range graph.adjacencyList[start] {
 			if !visited[neighbor] {
-				GetAllPaths(graph, neighbor, end, visited, path, allPaths)
+				GetAllPaths(graph, neighbor, final, visited, path, allPaths)
 			}
 		}
 	}
@@ -64,38 +66,46 @@ func GetAllPaths(graph *Graph, start, end string, visited map[string]bool, path 
 	visited[start] = false
 }
 
-func Bfs2(links []string, query map[string]bool, graph *Graph, start string, final string) *Graph {
+// Fungsi untuk mendapatkan path terpendek dari start hingga final dengan menggunakan algoritma BFS
+func Bfs2(queueLinks []string, visitedLink map[string]bool, graph *Graph, start string, final string) *Graph {
+	// Menginisiasi kedalaman terpendek dan memulai waktu pencarian
 	shortDepth := 999999
 	timeoutSeconds := 290
 	timeout := time.Duration(timeoutSeconds) * time.Second
 	startTime := time.Now()
-	for len(links) > 0 {
+
+	// Melakukan pencarian berdasarkan dengan queueLinks
+	for len(queueLinks) > 0 {
+
+		// Jika waktu sudah melewati batas waktu tertentu maka akan mengembalikan hasil yang sudah ada
 		if time.Since(startTime) > timeout {
 			return graph
 		}
-		fmt.Println(len(query))
-		currentLink := links[0]
-		links = links[1:]
 
-		links2, query2, graph2, found2 := getLinks(currentLink, query, graph, final)
-
-		links = append(links, links2...)
-		query = query2
+		// Melakukan pengambilan seluruh hyperlink yang ada dalam suatu page
+		currentLink := queueLinks[0]
+		queueLinks = queueLinks[1:]
+		links2, query2, graph2, found2 := getLinks(currentLink, visitedLink, graph, final)
+		queueLinks = append(queueLinks, links2...)
+		visitedLink = query2
 		graph = graph2
+
+		// Melakukan pengecekan apakah kedalaman sekarang sudah melewati kedalaman terpendak
 		currentDepth := graph.maxDepth(start)
-		fmt.Println(currentDepth)
 		if currentDepth > shortDepth {
 			break
 		}
+
+		// Jika link final ketemu, maka kedalaman sekarang akan dijadikan sebagai kedalaman terpendek
 		if found2 == true {
 			shortDepth = graph.maxDepth(start)
-			fmt.Println(len(query2))
 		}
 	}
 	return graph
 }
 
-func getLinks(html string, query map[string]bool, graph *Graph, final string) ([]string, map[string]bool, *Graph, bool) {
+// Fungsi untuk mendapatkan berbagai hyperlink yang ada di suatu page
+func getLinks(html string, visitedLink map[string]bool, graph *Graph, final string) ([]string, map[string]bool, *Graph, bool) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -105,38 +115,9 @@ func getLinks(html string, query map[string]bool, graph *Graph, final string) ([
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	//body, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body:", err)
 	}
-
-	// linkUrl := make(chan string)
-
-	// go func() {
-	// 	body.Find("p a[href]").Each(func(i int, s *goquery.Selection) {
-	// 		href, exists := s.Attr("href")
-	// 		if exists && strings.HasPrefix(href, "/wiki/") && validLink(href) {
-	// 			link := "https://en.wikipedia.org" + href
-	// 			linkUrl <- link
-	// 		}
-	// 	})
-	// 	close(linkUrl)
-	// }()
-	// var links []string
-	// var linkFound []string
-	// for link := range linkUrl {
-	// 	if link == final {
-	// 		linkFound = append(linkFound, link)
-	// 		query[link] = true
-	// 		graph.AddEdge(html, link)
-	// 		return linkFound, query, graph, true
-	// 	}
-	// 	if query[link] == false {
-	// 		links = append(links, link)
-	// 		query[link] = true
-	// 		graph.AddEdge(html, link)
-	// 	}
-	// }
 
 	re := regexp.MustCompile(`<a[^>]*href="([^"]*)"[^>]*>`)
 	matches := re.FindAllStringSubmatch(string(body), -1)
@@ -144,31 +125,32 @@ func getLinks(html string, query map[string]bool, graph *Graph, final string) ([
 	for _, match := range matches {
 		if len(match) > 1 {
 			link := match[1]
-			if validLink(link) && !uniqueLinks[link] && !query[link] {
+			if validLink(link) && !uniqueLinks[link] && !visitedLink[link] {
 				uniqueLinks[link] = true
 			}
 		}
 	}
-	var links []string
+	var newLinks []string
 	var linkFound []string
 	for link := range uniqueLinks {
 		link = "https://en.wikipedia.org" + link
 		if link == final {
 			linkFound = append(linkFound, link)
-			query[link] = true
+			visitedLink[link] = true
 			graph.AddEdge(html, link)
-			return linkFound, query, graph, true
+			return linkFound, visitedLink, graph, true
 		}
 
-		if query[link] == false {
-			links = append(links, link)
-			query[link] = true
+		if visitedLink[link] == false {
+			newLinks = append(newLinks, link)
+			visitedLink[link] = true
 			graph.AddEdge(html, link)
 		}
 	}
-	return links, query, graph, false
+	return newLinks, visitedLink, graph, false
 }
 
+// Fungsi untuk mengecek apakah link tersebut termasuk link yang valid atau tidak
 func validLink(link string) bool {
 	if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "(") && !strings.Contains(link, ".") && !strings.Contains(link, ",") && !strings.Contains(link, ":") && !strings.Contains(link, "#") && !strings.Contains(link, "%") && strings.ContainsAny(link, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
 		return true
