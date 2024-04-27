@@ -152,8 +152,6 @@ func getLinks(html string, visitedLink map[string]bool, graph *Graph, final stri
 
 // Fungsi untuk mengecek apakah link tersebut termasuk link yang valid atau tidak
 func validLink(link string) bool {
-	if strings.HasPrefix(link, "/wiki/") && !strings.Contains(link, "(") && !strings.Contains(link, ".") && !strings.Contains(link, ",") && !strings.Contains(link, ":") && !strings.Contains(link, "#") && !strings.Contains(link, "%") && strings.ContainsAny(link, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-		return true
-	}
-	return false
+	matched, _ := regexp.MatchString(`^/wiki/[A-Z][^(),:%#]*$`, link)
+	return matched && !strings.Contains(link, ".")
 }
