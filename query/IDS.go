@@ -104,7 +104,7 @@ var startT time.Time
 func DLS(limit int,goalURL string,mxLimit int, parent *Node,method string) {
 	defer wg.Done() 
 	cnt++ // Mengitung jumlah link yang di cek
-	fmt.Println("cnt : ",cnt)
+	// fmt.Println("cnt : ",cnt)
 
 	if (method == "FIRST"){
 		if  len(pathsAns) != 0 { // Jika method adalah FIRST dan path ditemukan, keluar dari fungsi

@@ -146,10 +146,8 @@ const SearchBar = () => {
           </div>
         </form>
       </div>
-      <div className='row mt-6'>
       {isLoading ? <div className='flex flex-col items-center justify-center'> <img src={gifImage} alt="GIF" style={{ width: '200px', height: 'auto' }} />
 </div>:<ListDefault data={response}/> }
-      </div>
     </>
   );
 };
